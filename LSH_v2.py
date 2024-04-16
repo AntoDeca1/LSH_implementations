@@ -4,20 +4,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 
 
-# COSTURIRE l alberi e quindi ogni vettore sarà mappato ad l buckets
-# I candidati sono presi dagli l bucket piu vicini
-# Una idea potrebbe essere quella di prendere tutti i candidati del bucket piu vicino(chiedere se va bene e ordinarli su questa base)
-# APPROCCIO ATTUALE:Prendere dai bucket fin quando non raggiungo k candidati(credo sia quello del Colab)
-# APPROCCIO MIGLIORE FORSE: Prendere prima tutti i candidati dei bucket immediatamente piu vicini e se raggiunto k elementi ritornarli.Senno controllare nel secondo livello di vicinanza
-# I candidati sono quelli presenti in almeno uno degli l buckets piu vicini
-# AGGIUSTARE LA QUESTIONE DI AVERE IL VETTORE STESSO TRA I VICINI
-
 class RandomProjections():
     def __init__(self, d, nbits, l=1, seed=42):
         """
         :param d: Dimensionality of our original vectors(e.g number of users in the dataset)
         :param nbits: Number of hyperplanes
-        :param l:Number of threes in the forest
+        :param l: Number of threes in the forest
         :self.all_hashes : Given nbits compute all the possible bucket-ids we could have
         :param seed:
         """
@@ -106,7 +98,7 @@ class RandomProjections():
         My approach that is in my opinion more efficient in term of reduction of false positives.
         1) For each vector i pick all the element in the closest buckets in all the l tables
         2) If i have not reached k elements yet i repeat the first step another time checking for the elements in the second's closest buckets
-        3) Once reached at lest k elements i compute the similarity returning the element with the highest similarity between the candidates
+        3) Once reached at least k elements i compute the similarity returning the k elements with the highest similarity between the candidates
         TODO: Optimize the code if necessary
         TODO: Remove the index as parameter
         :return:
