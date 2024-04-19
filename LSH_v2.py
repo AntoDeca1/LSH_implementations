@@ -2,7 +2,15 @@ import numpy as np
 from utils import stringify_array, all_binary
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
+import time
 
+
+# RIMUOVERE TUTTI QUESTI TRANSPOSE AGENDO SULLA FUNZIONE PROJECT MATRIX
+
+# DA OTTIMIZZARE
+# Potrebbe essere da ottimizzare come calcolo la cosine similairity.
+# IDEA:Potrei prendere i candidati da tutti i bucket di livello 1 e continuare a prendere tutti i candidati fin quando non ne ho almeno k
+# Trovare una maniera di calcolare le similarità in maniera matriciale magari sfruttando le matrici di scipy che sembrano velocizzare il calcolo
 
 class RandomProjections():
     def __init__(self, d, nbits, l=1, seed=42):
@@ -28,12 +36,13 @@ class RandomProjections():
         For each vector returns the list of its k candidates
         :return: matrix containing the candidates for each vector in the index
         """
-        for index, row in enumerate(self.buckets_matrix.squeeze()):
-            candidates = self.search_v2(row, index, k)
+        for index, row in enumerate(self.buckets_matrix):
+            candidates = self.search(row, index, k)
             if index == 0:
                 candidates_matrix = candidates
             else:
                 candidates_matrix = np.vstack([candidates_matrix, candidates])
+        print()
         return candidates_matrix
 
     def output_similarities(self, k=5):
@@ -41,17 +50,24 @@ class RandomProjections():
         Designed to test LSH using Elliot in a simple way
         :return:
         """
-        data, rows_indices, cols_indptr = [], [], []
         candidates = self.candidates_matrix(k)
-        for i in range(candidates.shape[0]):
-            cols_indptr.append(len(data))
-            vec = self._input_matrix[i, :].reshape(1, -1)
-            vecs_ = self._input_matrix[candidates[i, :]]
-            similarities = cosine_similarity(vec, vecs_)
-            data.extend(*similarities)
-            rows_indices.extend(*candidates[i, :].reshape(1, -1))
-        cols_indptr.append(len(data))
-        return data, rows_indices, cols_indptr
+
+        index = self._input_matrix.toarray()
+
+        candidates_vectors = index[candidates]
+
+        # Get number of items
+        num_items = candidates.shape[0]
+
+        # Initialize the matrix to hold cosine similarities
+        similarity_matrix = np.zeros((num_items, k))
+        # Iniziamo con un for
+
+        for i, vector in enumerate(self._input_matrix):
+            similarity_matrix[i, :] = cosine_similarity(vector, candidates_vectors[i])
+
+        return similarity_matrix
+
 
     def add(self, input_matrix):
         """
@@ -68,6 +84,7 @@ class RandomProjections():
         buckets = self.project_matrix(centered_matrix)
         self.buckets_matrix = (buckets > 0).astype(int)
         self.mapping_ = self.create_mappings()
+        print()
 
     def create_mappings(self):
         """
@@ -75,11 +92,12 @@ class RandomProjections():
         :return:
         """
         hash_tables = [defaultdict(list) for _ in range(self.l)]
-        for item_idx, buckets in enumerate(self.buckets_matrix.squeeze()):
+        for item_idx, buckets in enumerate(self.buckets_matrix):
             for hash_table_id, bucket in enumerate(buckets):
                 strigified_id = stringify_array(bucket)
                 current_hash_table = hash_tables[hash_table_id]
                 current_hash_table[strigified_id].append(item_idx)
+        print()
         return hash_tables
 
     def project_matrix(self, input_matrix):
@@ -88,10 +106,15 @@ class RandomProjections():
         :param input_matrix:
         :return:
         """
-        local_matrix = input_matrix.copy()
-        items, users = input_matrix.toarray().shape
-        local_matrix = local_matrix.toarray().reshape(1, items, users)
-        return local_matrix.dot(self.projection_matrix)
+        output = None
+        for i in range(self.projection_matrix.shape[0]):
+            temp = input_matrix.dot(self.projection_matrix[i])
+            temp = temp.reshape(1, *temp.shape)
+            if output is None:
+                output = temp
+            else:
+                output = np.concatenate([output, temp])
+        return output.transpose(1, 0, 2)
 
     def search_v2(self, hashed_vec, index, k=5):
         """
@@ -126,10 +149,12 @@ class RandomProjections():
     def search(self, hashed_vec, index, k=5):
         """
         First version.
+        Supponiamo che search vada bene
         Source:https://github.com/pinecone-io/examples/blob/master/learn/search/faiss-ebook/locality-sensitive-hashing-random-projection/random_projection.ipynb
         1) I keep taking from the buckets until i reach k elements
         2) I return the first k without caring of the actual similarity between the query and the candidates
-        For sure this approach is more efficient but in my opinion could decrease too much the performances
+        For sure this approach is more efficient but in my opinion could decrease too much the performance
+        Optimize the removal of indexes
         :return:
         """
         candidates = set()
@@ -139,7 +164,8 @@ class RandomProjections():
                 hamming_dist = self.hamming(el, self.all_hashes)
                 stringified_id = stringify_array(hamming_dist[i, :])
                 candidates = candidates | set(self.mapping_[table_id][stringified_id])
-            candidates.remove(index)
+            if i == 0:
+                candidates.remove(index)
             if len(candidates) >= k:
                 break
             else:
