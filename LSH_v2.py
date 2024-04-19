@@ -26,7 +26,7 @@ class RandomProjections():
         self.l = l
         self.projection_matrix = self._initialize_projection_matrix()
         self.seed = seed
-        self.all_hashes = np.vstack(all_binary(nbits))
+        self.all_hashes = None
         if self.seed is not None:
             np.random.seed(self.seed)
         self.buckets_matrix = None
@@ -68,7 +68,6 @@ class RandomProjections():
 
         return similarity_matrix
 
-
     def add(self, input_matrix):
         """
         Inserts each vector into the corresponding bucket(s)
@@ -83,6 +82,7 @@ class RandomProjections():
         self._input_matrix = centered_matrix
         buckets = self.project_matrix(centered_matrix)
         self.buckets_matrix = (buckets > 0).astype(int)
+        self.all_hashes = np.unique(self.buckets_matrix.reshape(-1, self.nbits), axis=0)
         self.mapping_ = self.create_mappings()
         print()
 

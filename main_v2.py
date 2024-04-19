@@ -10,7 +10,7 @@ seed = 42
 nbits = 5  # number of hyperplanes in a three
 m = 6040  # number of users
 n = 3675  # number of items
-l = 10  # number of thress in the forsest
+l = 5  # number of thress in the forest
 np.random.seed(seed)
 """
 INPUT
@@ -24,7 +24,10 @@ rp = RandomProjections(d=m, l=2, nbits=nbits, seed=42)
 """
 Index our vectors
 """
+start = time.time()
 rp.add(user_item_matrix_dummy.T)
+end = time.time()
+print("Time to index the vectors", end - start)
 """
 Candidates
 """
@@ -33,7 +36,7 @@ Candidates
 start = time.time()
 prova = rp.output_similarities()
 end = time.time()
-print(end - start)
+print("Time to compute the similarity", end - start)
 # print("data", data)
 # print("rows_indicies", rows_indices)
 # print()
