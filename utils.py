@@ -9,17 +9,8 @@ def create_sparse_matrix(rows, cols, sparsity=0.7, seed=42):
     sparse_matrix = dense_matrix * mask
     return csr_matrix(sparse_matrix)
 
-
-def count_valid_indices(my_list, index_list):
-    """
-    Given two lists count how many indexes i got correct
-    :param my_list:
-    :param index_list:
-    :return:
-    """
-    valid_indices_count = sum([1 for index in my_list if index in index_list])
-    return valid_indices_count / len(my_list)
-
+def stringify_array(array: np.array):
+    return ''.join(map(str, array.flatten()))
 
 def all_binary(n):
     total = 1 << n
@@ -35,8 +26,6 @@ def all_binary(n):
     return combinations
 
 
-def stringify_array(array: np.array):
-    return ''.join(map(str, array.flatten()))
 
 
 def initialize_random_matrix(d, k):
