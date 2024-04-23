@@ -3,6 +3,8 @@ from utils import stringify_array, all_binary
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 import time
+from BK_three import BKTree
+from scipy.spatial.distance import hamming
 from scipy.sparse import csr_matrix
 import sparse
 
@@ -35,6 +37,7 @@ class RandomProjections():
         """
         num_items = self.buckets_matrix.shape[0]
         candidates_matrix = np.empty((num_items, k)).astype(int)
+        # PUNTO CRITICO
         for index, row in enumerate(self.buckets_matrix):
             candidates = self.search(row, index, k)
             candidates_matrix[index, :] = candidates
@@ -42,35 +45,31 @@ class RandomProjections():
 
     def output_similarities(self, k=5):
         """
-        FASTEST IMPLEMENTATION(even if still slower than pure cosine_similarity itemXitem)
-        Calculates the candidate_matrix (contains candidate indices) and from the input matrix (items) selects vectors and calculates their similarity
+        Designed to test LSH using Elliot in a simple way
+        QUA POSSO PROVARE CON IL MAPPING SENZA LA CANDIDATES MATRIX
         :return:
         """
-        before = time.time()
         candidates = self.candidates_matrix(k)
-        after = time.time()
-        print(after - before, "Candidates Matrix")
 
         index = self._input_matrix.toarray()
 
         candidates_vectors = index[candidates]
 
-        # Get number of items
         num_items = candidates.shape[0]
 
-        # Initialize the matrix to hold cosine similarities
-        similarity_matrix = np.empty((num_items, k))
-        # Iniziamo con un for
-        prima = time.time()
-        for i, vector in enumerate(self._input_matrix):
-            prima = time.time()
-            similarity_matrix[i, :] = cosine_similarity(vector, candidates_vectors[i])
-            dopo = time.time()
-            print(dopo - prima, "Single Operation output_similarities")
-        dopo = time.time()
-        print(dopo - prima, "For loop output_similarities")
+        # similarity_matrix = np.empty((num_items, k))
 
-        return similarity_matrix, candidates
+        data, row_indices, cols_indptr = [], [], []
+        for i, vector in enumerate(self._input_matrix):
+            cols_indptr.append(len(data))
+            before = time.time()
+            data.extend(cosine_similarity(vector, candidates_vectors[i]))
+            after = time.time()
+            print(after - before, "Single Operation outputsimilarities")
+
+        cols_indptr.append(len(data))
+
+        return data, candidates.flatten(), cols_indptr
 
     def output_similarities_2(self, k=5):
         """
@@ -82,39 +81,44 @@ class RandomProjections():
         :return:
         """
         prima = time.time()
-        candidates = self.candidates_mapping(k)
+        candidates = self.candidates_list(k)
         index = self._input_matrix.toarray()
-        candidates_vector = [index[v] for k, v in candidates.items()]
+
+        # N.B Creating this vector makes the for loop a lot faster but when the number of users is huge this does not fit in memory
+        candidates_vector = [index[v] for v in candidates]
         dopo = time.time()
         print(dopo - prima, "Candidates Mapping")
 
         # Get number of items
-        data, row_indices = [], []
+        data, row_indices, cols_indptr = [], [], []
         prima = time.time()
         for i, vector in enumerate(self._input_matrix):
+            cols_indptr.append(len(data))
             before = time.time()
             c_similarities = cosine_similarity(vector, candidates_vector[i]).flatten()
+            # c_similarities = cosine_similarity(vector, self._input_matrix[candidates[i]]).flatten()
             after = time.time()
             print(after - before, "Single Operation outputsimilarities_2")
             sorted_indices = np.argsort(-c_similarities)[:k].flatten()
             data.extend(c_similarities[sorted_indices])
-            row_indices.extend(sorted_indices)
+            row_indices.extend(candidates[i][sorted_indices])
         dopo = time.time()
+        cols_indptr.append(len(data))
         print(dopo - prima, "For loop output_similarities_2")
 
-        return data, row_indices
+        return data, row_indices, cols_indptr
 
     def candidates_list(self, k):
         """
         For each vector returns the list of its k candidates
         :return: matrix containing the candidates for each vector in the index
         """
-        candidates_mapping = []
+        candidates_list = []
         for index, row in enumerate(self.buckets_matrix):
-            candidates = self.search_1(row, index, k)
-            candidates_mapping.append(candidates)
+            candidates = np.array(self.search_1(row, index, k))
+            candidates_list.append(candidates)
 
-        return candidates_mapping
+        return candidates_list
 
     def candidates_mapping(self, k):
         """
@@ -144,29 +148,34 @@ class RandomProjections():
         self._input_matrix = centered_matrix
         buckets = self.project_matrix(centered_matrix)
         self.buckets_matrix = (buckets > 0).astype(int)
-        self.all_hashes = np.unique(self.buckets_matrix.reshape(-1, self.nbits), axis=0)
+        self.all_hashes = self.extract_unique_hashes()
         self.mapping_ = self.create_mappings()
-        self.closest_buckets = self.precompute_closest_buckets()  # Da verificare se ne vale la pena precalcolarle
+        self.closest_buckets = self.precompute_closest_buckets()
 
-    def precompute_closest_buckets(self):
+    def extract_unique_hashes(self):
+        return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}
+
+    def precompute_closest_buckets(self, tolerance=10):
         """
         This function compute for each buckets it's closest buckets
         This avoid in the search function to compute the hamming distance in each iteration
         :return:
         """
         # Dictionary to store the closest buckets for each hash
-        closest_buckets = {}
-        num_hashes = self.all_hashes.shape[0]
+        closest_buckets = [{} for _ in range(len(self.all_hashes))]
+        for index, hash_table in enumerate(self.all_hashes.values()):
+            num_hashes = hash_table.shape[0]
 
-        # Compute the Hamming distance between each pair of hashes
-        expanded_hashes = np.expand_dims(self.all_hashes, 1)
-        distances = np.count_nonzero(expanded_hashes != expanded_hashes.transpose(1, 0, 2), axis=2)
+            # Compute the Hamming distance between each pair of hashes
+            expanded_hashes = np.expand_dims(hash_table, 1)
+            distances = np.count_nonzero(expanded_hashes != expanded_hashes.transpose(1, 0, 2), axis=2)
 
-        # For each hash, find and store indices of the closest buckets
-        for idx in range(num_hashes):
-            sorted_indices = np.argsort(distances[idx])
-            # Save the closest buckets' indices, skip the first one as it is the hash itself
-            closest_buckets[stringify_array(self.all_hashes[idx])] = sorted_indices  # Adjust slicing as needed
+            # For each hash, find and store indices of the closest buckets
+            for idx in range(num_hashes):
+                sorted_indices = np.argsort(distances[idx])
+                # Save the closest buckets' indices, skip the first one as it is the hash itself
+                closest_buckets[index][stringify_array(hash_table[idx])] = sorted_indices[
+                                                                           :tolerance]  # Adjust slicing as needed
 
         return closest_buckets
 
@@ -181,7 +190,6 @@ class RandomProjections():
                 strigified_id = stringify_array(bucket)
                 current_hash_table = hash_tables[hash_table_id]
                 current_hash_table[strigified_id].append(item_idx)
-        print()
         return hash_tables
 
     def project_matrix(self, input_matrix):
@@ -215,7 +223,7 @@ class RandomProjections():
         i = 0
         while True:
             for table_id, el in enumerate(hashed_vec):
-                id = stringify_array(self.all_hashes[self.closest_buckets[stringify_array(el)][i]])
+                id = stringify_array(self.all_hashes[table_id][self.closest_buckets[table_id][stringify_array(el)][i]])
                 candidates = candidates | set(self.mapping_[table_id][id])
             if i == 0:
                 candidates.remove(index)
@@ -244,15 +252,31 @@ class RandomProjections():
         i = 0
         while True:
             for table_id, el in enumerate(hashed_vec):
-                id = stringify_array(self.all_hashes[self.closest_buckets[stringify_array(el)][i]])
+                id = stringify_array(self.all_hashes[table_id][self.closest_buckets[table_id][stringify_array(el)][i]])
                 candidates = candidates | set(self.mapping_[table_id][id])
             if i == 0:
                 candidates.remove(index)
-            if len(candidates) >= k:
+            if (len(candidates) >= k or i == 10):
                 break
             else:
                 i = i + 1
         return list(candidates)
+
+    def hamming(self, hashed_vec: np.array, other_hashes: np.array) -> np.array:
+        """
+        See: precompute_closest_bucket
+        Returns the matrix of buckets ordered relatively to the hamming distance
+        :param hashed_vec: The bucket assigned to the vector we are considering
+        :param other_hashes: All the buckets that have something in it
+        :return: Matrix identical to "other_hashes" but ordered relatively to the hamming distance from the current hashed_vec
+        """
+        # get hamming distance between query vec and all buckets in other_hashes
+        hamming_dist = np.count_nonzero(hashed_vec != other_hashes, axis=1).reshape(-1, 1)
+        # add hash values to each row
+        hamming_dist = np.concatenate((other_hashes, hamming_dist), axis=1)
+        # sort based on distance
+        hamming_dist = hamming_dist[hamming_dist[:, -1].argsort()][:, :-1]
+        return hamming_dist
 
     def _initialize_projection_matrix(self):
         """

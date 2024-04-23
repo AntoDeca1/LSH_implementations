@@ -8,12 +8,12 @@ from sklearn.metrics.pairwise import cosine_similarity
 PARAMETERS
 """
 seed = 42
-nbits = 14  # number of hyperplanes in a three --> Decrease the number of false positives
+nbits = 64  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
 n = 3750  # number of items
-l = 4  # number of thress in the forest -->Decrease the number of false negatives
+l = 4  # number of threes in the forest -->Decrease the number of false negatives
 sparsity = 0.9
-neighbours = 50
+neighbours = 20
 np.random.seed(seed)
 """
 INPUT
@@ -23,7 +23,7 @@ user_item_matrix_dummy = create_sparse_matrix(m, n, sparsity=sparsity)
 """
 LSH Index
 """
-rp = RandomProjections(d=m, l=2, nbits=nbits, seed=42)
+rp = RandomProjections(d=m, l=l, nbits=nbits, seed=42)
 """
 Index our vectors
 """
