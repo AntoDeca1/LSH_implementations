@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 PARAMETERS
 """
 seed = 42
-nbits = 64  # number of hyperplanes in a three --> Decrease the number of false positives
+nbits = 24  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
 n = 3750  # number of items
 l = 4  # number of threes in the forest -->Decrease the number of false negatives
@@ -41,3 +41,11 @@ prova = rp.output_similarities_2(k=neighbours)
 # prova=rp.output_similarities_2()
 end = time.time()
 print("Time to compute the similarity with LSH", end - start)
+
+# POINTS TO IMPROVE
+# SIMILARITY candidates_vector saturate when we have 20.000 vectors
+# INDEXING TAKES TIME(precompute closest ) when we have a huge number of users but also a high number of nbits
+
+# Increasing the number of bits mostly increase the indexing time(the search sometimes takes less time with output similarities2)
+# DIFFERENT FROM OUTPUT_Similarity
+# Try to swap nbits from 20 to 40

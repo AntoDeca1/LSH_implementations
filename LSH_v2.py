@@ -3,10 +3,6 @@ from utils import stringify_array, all_binary
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 import time
-from BK_three import BKTree
-from scipy.spatial.distance import hamming
-from scipy.sparse import csr_matrix
-import sparse
 
 
 class RandomProjections():
@@ -170,13 +166,10 @@ class RandomProjections():
             expanded_hashes = np.expand_dims(hash_table, 1)
             distances = np.count_nonzero(expanded_hashes != expanded_hashes.transpose(1, 0, 2), axis=2)
 
-            # For each hash, find and store indices of the closest buckets
             for idx in range(num_hashes):
                 sorted_indices = np.argsort(distances[idx])
-                # Save the closest buckets' indices, skip the first one as it is the hash itself
-                closest_buckets[index][stringify_array(hash_table[idx])] = sorted_indices[
-                                                                           :tolerance]  # Adjust slicing as needed
-
+                closest_buckets[index][stringify_array(hash_table[idx])] = sorted_indices#[
+                                                                           #:tolerance]  ed
         return closest_buckets
 
     def create_mappings(self):
@@ -245,7 +238,7 @@ class RandomProjections():
          1b) If i have not yet k candidates i move to the second closest bucket and so on
         2) Return all the candidates
         N.B This function does not work in self.candidates_matrix because it returns a different number /
-        of candidates for each vector (at least 5) and thus makes it impossible to create a matrix
+        of candidates for each vector (at least k) and thus makes it impossible to create a matrix
         :return:
         """
         candidates = set()
