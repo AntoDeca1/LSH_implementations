@@ -1,28 +1,32 @@
 import faiss
-import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
-from utils import create_sparse_matrix
+import numpy as np
 
-"""
-PARAMETERS
-"""
-nbits = 5  # number of hyperplanes
-m = 50  # number of users
-n = 100  # number of items
-np.random.seed(42)
-"""
-INPUT
-"""
-# user_item_matrix_dummy = np.random.randint(1, 5, size=(m, n))
-user_item_matrix_dummy = create_sparse_matrix(m, n)
-item_user_matrix_dummy = user_item_matrix_dummy.T.toarray()
-# initialize the index using our vectors dimensionality (m) and nbits
-index = faiss.IndexLSH(m, nbits)
-# Add the data to the index
-index.add(item_user_matrix_dummy)
-D, I = index.search(item_user_matrix_dummy[0, :].reshape(1, m), k=5)
-# print(D)  #Hamming distances to all the founded neighbours
-print(I[0])
-print(item_user_matrix_dummy[I[0]])
-similarities = cosine_similarity(item_user_matrix_dummy[I[0]], [item_user_matrix_dummy[1, :]])
-print(similarities)
+
+class LSH_faiss:
+    def __init__(self, d, l, nbits):
+        self.d = d
+        self.l = l
+        self.nbits = nbits
+        self.indices = [faiss.IndexLSH(d, nbits) for _ in range(self.l)]
+
+    def _initialize_indices(self):
+        indices = []
+        for i in range(self.l):
+            index = faiss.IndexLSH(self.d, self.nbits)
+            indices.append(index)
+
+    def add(self, input):
+        self._input = input
+        for i, index in enumerate(self.indices):
+            index.rrot.init(42 + i + 12)
+            index.add(input)
+
+    def search(self, k):
+        for row_n, row in enumerate(self._input):
+            candidates = set()
+            for index in self.indices:
+                _, I = index.search(row.reshape(1, -1), k)
+                candidates = candidates | set(I[0])
+            similarities = cosine_similarity(row.reshape(1, -1), self._input[list(candidates)])
+        return candidates

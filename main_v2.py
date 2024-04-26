@@ -8,7 +8,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 PARAMETERS
 """
 seed = 42
-nbits = 24  # number of hyperplanes in a three --> Decrease the number of false positives
+nbits = 8  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
 n = 3750  # number of items
 l = 4  # number of threes in the forest -->Decrease the number of false negatives
@@ -38,7 +38,7 @@ print("Time to compute the itemXitem similarity", end - start)
 "Similarities and Indexes"
 start = time.time()
 prova = rp.output_similarities_2(k=neighbours)
-# prova=rp.output_similarities_2()
+# prova=rp.output_similarities()
 end = time.time()
 print("Time to compute the similarity with LSH", end - start)
 

@@ -168,8 +168,8 @@ class RandomProjections():
 
             for idx in range(num_hashes):
                 sorted_indices = np.argsort(distances[idx])
-                closest_buckets[index][stringify_array(hash_table[idx])] = sorted_indices#[
-                                                                           #:tolerance]  ed
+                closest_buckets[index][stringify_array(hash_table[idx])] = sorted_indices  # [
+                #:tolerance]  ed
         return closest_buckets
 
     def create_mappings(self):
