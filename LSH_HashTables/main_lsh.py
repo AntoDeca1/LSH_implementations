@@ -1,14 +1,12 @@
 import numpy as np
-from LSH import LSHRp
-from table import HashTable
+from LSH_HashTables.LSH import LSHRp
 from utils import create_sparse_matrix
-import time
 
 """
 PARAMETERS
 """
 seed = 42
-nbits = 8  # number of hyperplanes in a three --> Decrease the number of false positives
+nbits = 9  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
 n = 3750  # number of items
 l = 4  # number of threes in the forest -->Decrease the number of false negatives

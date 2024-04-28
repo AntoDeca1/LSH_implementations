@@ -6,15 +6,22 @@ from utils import stringify_array
 
 
 class HashTable:
-    def __init__(self, hash_size, dim):
+    def __init__(self, hash_size, dim, seed=42):
         self.table = defaultdict(list)
         self.hash_size = hash_size
         self.projections = np.random.randn(self.hash_size, dim)
+        self._mapping = defaultdict(list)
 
     def add(self, input_matrix):
+        """
+        Project and construct the buckets mapping
+        :param input_matrix:
+        :return:
+        """
+
         hashes = self._project(input_matrix)
-        for index, hashing in enumerate(hashes):
-            self.table[stringify_array(hashing)].append(index)
+        for idx, row in enumerate(hashes):
+            self._mapping[stringify_array(row)].append(idx)
 
     def _project(self, input_matrix):
         signatures = input_matrix.dot(self.projections.T)
@@ -22,14 +29,11 @@ class HashTable:
 
     def query(self, vecs):
         """
-        Versione non ottimizzata
-        :param vecs:
+        :param vecs: Query vecs
         :return:
         """
-        # Candidates ha per ogni vettore in vecs i vicini candidati(quelli che cadono nello stesso bucket)
         candidates = []
-        # Un hash per ogni vettore
-        hashes = self._project(vecs)
-        for hash in hashes:
-            candidates.append(self.table[stringify_array(hash)])
+        buckets = self._project(vecs)
+        for bucket in buckets:
+            candidates.append(self._mapping[stringify_array(bucket)])
         return candidates

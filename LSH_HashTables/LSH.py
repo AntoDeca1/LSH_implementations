@@ -31,12 +31,14 @@ class LSHRp:
         return self.construct_datastructure(full_candidates)
 
     def construct_datastructure(self, full_candidates):
+        """
+        Construct a sparse matrix n_itemsXn_items(or n_users,n_users) having 1 only in the index of the candidates
+        :param full_candidates:
+        :return:
+        """
         n = len(full_candidates)
         matrix = sp.dok_matrix((n, n), dtype=int)
         for key, indices in full_candidates.items():
             for index in indices:
                 matrix[key, index] = 1
         return matrix.tocsr()
-
-    def describe(self):
-        pass
