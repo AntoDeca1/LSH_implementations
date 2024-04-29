@@ -32,7 +32,7 @@ class RandomProjections():
         N.B: This approach used in self.output_similarities is faster but force us to select k neighbours in advance
         """
         num_items = self.buckets_matrix.shape[0]
-        candidates_matrix = np.empty((num_items, k)).astype(int)
+        candidates_matrix = np.zeros((num_items, k)).astype(int)
         # PUNTO CRITICO
         for index, row in enumerate(self.buckets_matrix):
             candidates = self.search(row, index, k)
