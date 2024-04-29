@@ -94,6 +94,8 @@ class RandomProjections():
         for index, el in enumerate(self.buckets_matrix):
             candidates = list(self._get_vec_candidates(el))
             output_matrix[index, candidates] = 1
+        # N.B Non passare alla scipy matrix rende il tutto piu rapido
+        # return output_matrix
         return sp.csr_matrix(output_matrix)
 
     def create_mappings(self):
