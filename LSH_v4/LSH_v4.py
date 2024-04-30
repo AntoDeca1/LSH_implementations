@@ -4,6 +4,7 @@ from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 import time
 import scipy.sparse as sp
+from sklearn.metrics import pairwise_distances
 import sys
 
 """
@@ -127,6 +128,7 @@ class RandomProjections():
         :param hashed_vec: The bucket assigned to the vector we are considering
         :param other_hashes: All the buckets that have something in it
         :return: Matrix identical to "other_hashes" but ordered relatively to the hamming distance from the current hashed_vec
+        Provare a calcolarle in un colpo solo per tutti i vettori
         """
         # get hamming distance between query vec and all buckets in other_hashes
         hamming_dist = np.count_nonzero(hashed_vec != self.all_hashes[table_id], axis=1)

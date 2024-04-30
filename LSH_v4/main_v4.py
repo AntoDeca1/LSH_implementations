@@ -10,7 +10,7 @@ PARAMETERS
 seed = 42
 nbits = 12  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
-n = 10000  # number of items
+n = 3750  # number of items
 l = 6  # number of threes in the forest -->Decrease the number of false negatives
 sparsity = 0.9
 neighbours = 20

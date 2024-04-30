@@ -35,11 +35,4 @@ class HashTable:
         buckets = self._project(vecs)
         candidates = [self._mapping[stringify_array(bucket)] for bucket in buckets]
         return candidates
-    # def query(self, vecs):
-    #     """
-    #     :param vecs: Query vecs
-    #     :return:
-    #     """
-    #     buckets = self._project(vecs)
-    #     candidates = [self._mapping[stringify_array(bucket)] for bucket in buckets]
-    #     return candidates
+
