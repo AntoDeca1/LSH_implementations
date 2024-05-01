@@ -66,18 +66,19 @@ class RandomProjections():
         # For each vector the closest buckets indices in term of hamming dist
         closest_buckets_idxs = [self.hamming(vectors, table_id) for table_id, vectors in enumerate(vec)]
         while True:
+            new_candidates = []
             for index, table in enumerate(self.mapping_):
                 closest_bucket = closest_buckets_idxs[index][i]
-                new_candidates = table[stringify_array(self.all_hashes[index][closest_bucket])]
+                new_candidates.extend(table[stringify_array(self.all_hashes[index][closest_bucket])])
                 new_candidates_len = len(new_candidates)
-                if num_candidates + new_candidates_len >= k:
-                    candidates = candidates | set(np.random.choice(new_candidates, (k - num_candidates), replace=False))
-                    break
-                else:
-                    candidates = candidates | set(new_candidates)
-                    num_candidates += len(new_candidates)
-                    i += 1
-            return candidates
+            if num_candidates + new_candidates_len >= k:
+                candidates = candidates | set(np.random.choice(new_candidates, (k - num_candidates), replace=False))
+                break
+            else:
+                candidates = candidates | set(new_candidates)
+                num_candidates += len(new_candidates)
+                i += 1
+        return candidates
 
     def output_candidates(self, k):
         n = len(self.buckets_matrix)
@@ -86,8 +87,8 @@ class RandomProjections():
             candidates = list(self._get_vec_candidates(el, k))
             output_matrix[index, candidates] = 1
         # N.B Non passare alla scipy matrix rende il tutto piu rapido
-        return output_matrix
-        # return sp.csr_matrix(output_matrix)
+        # return output_matrix
+        return sp.csr_matrix(output_matrix)
 
     def extract_unique_hashes(self):
         return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}
@@ -142,5 +143,5 @@ class RandomProjections():
         :return:
         """
         # Vedere su usare randn migliora i risultati
-        # np.random.randn(self.l, self.d, self.nbits)
+        # return np.random.randn(self.l, self.d, self.nbits)
         return np.random.rand(self.l, self.d, self.nbits) - .5
