@@ -8,10 +8,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 PARAMETERS
 """
 seed = 42
-nbits = 8  # number of hyperplanes in a three --> Decrease the number of false positives
+nbits = 6  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
 n = 3750  # number of items
-l = 4  # number of threes in the forest -->Decrease the number of false negatives
+l = 1  # number of threes in the forest -->Decrease the number of false negatives
 sparsity = 0.9
 neighbours = 20
 np.random.seed(seed)

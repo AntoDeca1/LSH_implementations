@@ -86,8 +86,8 @@ class RandomProjections():
             candidates = list(self._get_vec_candidates(el, k))
             output_matrix[index, candidates] = 1
         # N.B Non passare alla scipy matrix rende il tutto piu rapido
-        # return output_matrix
-        return sp.csr_matrix(output_matrix)
+        return output_matrix
+        # return sp.csr_matrix(output_matrix)
 
     def extract_unique_hashes(self):
         return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}
@@ -141,4 +141,6 @@ class RandomProjections():
         Useful to inizialize a matrix for projecting our dense vectors in binary ones
         :return:
         """
+        # Vedere su usare randn migliora i risultati
+        # np.random.randn(self.l, self.d, self.nbits)
         return np.random.rand(self.l, self.d, self.nbits) - .5
