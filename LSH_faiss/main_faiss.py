@@ -22,7 +22,7 @@ PARAMETERS
 seed = 42
 nbits = 8  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
-n = 3750  # number of items
+n = 10000  # number of items
 sparsity = 0.9
 neighbours = 20
 """

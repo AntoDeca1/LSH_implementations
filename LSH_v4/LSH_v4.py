@@ -80,7 +80,7 @@ class RandomProjections():
                 i += 1
         return candidates
 
-    def output_candidates(self, k):
+    def search(self, k):
         n = len(self.buckets_matrix)
         output_matrix = np.zeros((n, n), dtype=int)
         for index, el in enumerate(self.buckets_matrix):
@@ -89,6 +89,13 @@ class RandomProjections():
         # N.B Non passare alla scipy matrix rende il tutto piu rapido
         # return output_matrix
         return sp.csr_matrix(output_matrix)
+
+    def search_2(self, k):
+        n = len(self.buckets_matrix)
+        candidates = np.zeros((n, k), dtype=int)
+        for index, el in enumerate(self.buckets_matrix):
+            candidates[index] = list(self._get_vec_candidates(el, k))
+        return candidates
 
     def extract_unique_hashes(self):
         return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}

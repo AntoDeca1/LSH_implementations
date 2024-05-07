@@ -6,7 +6,7 @@ from sklearn.metrics.pairwise import cosine_similarity, euclidean_distances, hav
     manhattan_distances
 from sklearn.metrics import pairwise_distances
 from sklearn.preprocessing import normalize
-from ..LSH_v3.LSH_v3 import RandomProjections
+from LSH_v3.LSH_v3 import RandomProjections
 import time
 import scipy.sparse as sp
 
@@ -174,11 +174,6 @@ class Similarity(object):
         local_top_k = real_values.argsort()[::-1]
         return [(real_indices[item], real_values[item]) for item in local_top_k]
 
-    # @staticmethod
-    # def score_item(neighs, user_items):
-    #     num = sum([v for k, v in neighs.items() if k in user_items])
-    #     den = sum(np.power(list(neighs.values()), 1))
-    #     return num/den if den != 0 else 0
 
     def get_model_state(self):
         saving_dict = {}
