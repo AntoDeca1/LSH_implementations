@@ -73,14 +73,15 @@ class RandomProjections():
             for index, table in enumerate(self.mapping_):
                 closest_bucket = closest_buckets_idxs[index][i]
                 new_candidates.update(table[stringify_array(self.all_hashes[index][closest_bucket])])
-            new_candidates_len += len(candidates | new_candidates)
-            if new_candidates_len >= k:
+            effective_new_candidates = new_candidates.difference(candidates)
+            new_candidates_len += len(effective_new_candidates)
+            if num_candidates + new_candidates_len >= k:
                 candidates = candidates | set(
-                    np.random.choice(list(new_candidates), (new_candidates_len-k), replace=False))
+                    np.random.choice(list(effective_new_candidates), (k - num_candidates), replace=False))
                 break
             else:
                 candidates = candidates | set(new_candidates)
-                num_candidates += len(candidates)
+                num_candidates = len(candidates)
                 i += 1
         return candidates
 
