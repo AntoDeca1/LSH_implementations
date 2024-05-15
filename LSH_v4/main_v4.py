@@ -8,17 +8,16 @@ from sklearn.metrics.pairwise import cosine_similarity
 PARAMETERS
 """
 seed = 42
-nbits = 64  # number of hyperplanes in a three --> Decrease the number of false positives
+nbits = 32  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
-n = 10000  # number of items
+n = 4000  # number of items
 l = 1  # number of threes in the forest -->Decrease the number of false negatives
 sparsity = 0.9
-neighbours = 20
+neighbours = 200
 np.random.seed(seed)
 """
 INPUT
 """
-# user_item_matrix_dummy = np.random.randint(1, 5, size=(m, n))
 user_item_matrix_dummy = create_sparse_matrix(m, n, sparsity=sparsity)
 """
 LSH Index
@@ -31,9 +30,9 @@ start = time.time()
 rp.add(user_item_matrix_dummy.T)
 end = time.time()
 print("Time to index the vectors with LSH", end - start)
-start = time.time()
-similarities = cosine_similarity(user_item_matrix_dummy.T)
-end = time.time()
+# start = time.time()
+# similarities = cosine_similarity(user_item_matrix_dummy.T)
+# end = time.time()
 print("Time to compute the itemXitem similarity", end - start)
 "Similarities and Indexes"
 start = time.time()
