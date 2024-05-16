@@ -135,14 +135,11 @@ class RandomProjections():
         :param input_matrix:
         :return:
         """
-        output = None
+        output = np.empty((self.l, input_matrix.shape[0], self.nbits))
         for i in range(self.projection_matrix.shape[0]):
             temp = input_matrix.dot(self.projection_matrix[i])
-            temp = temp.reshape(1, *temp.shape)
-            if output is None:
-                output = temp
-            else:
-                output = np.concatenate([output, temp])
+            temp = np.expand_dims(temp, axis=0)
+            output[i] = temp
         return output.transpose(1, 0, 2)
 
     def hamming(self, hashed_vec: np.array, table_id: int) -> np.array:
