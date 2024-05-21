@@ -1,4 +1,5 @@
 import numpy as np
+import pandas as pd
 from utils import stringify_array
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
@@ -72,6 +73,7 @@ class RandomProjections():
             new_candidates_len = 0
             for index, table in enumerate(self.mapping_):
                 closest_bucket = closest_buckets_idxs[index][i]
+                # closest_bucket=next(closest_bucket_idxs[index])
                 new_candidates.update(table[stringify_array(self.all_hashes[index][closest_bucket])])
             effective_new_candidates = new_candidates.difference(candidates)
             new_candidates_len += len(effective_new_candidates)
@@ -154,6 +156,8 @@ class RandomProjections():
         hamming_dist = np.count_nonzero(hashed_vec != self.all_hashes[table_id], axis=1)
         # Indices interal to self.all_hashes[table_id]
         sorted_indices = hamming_dist.argsort()
+        # for index in sorted_indices:
+        #   yield index
         return sorted_indices
 
     def _initialize_projection_matrix(self):
