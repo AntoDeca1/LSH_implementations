@@ -1,5 +1,6 @@
 import numpy as np
 from LSH_v4.LSH_v4 import RandomProjections
+from LSH_faiss.LSH_faiss import LSH
 from utils import create_sparse_matrix
 import time
 import matplotlib.pyplot as plt

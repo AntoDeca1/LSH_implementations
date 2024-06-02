@@ -22,7 +22,7 @@ Implementation that instead follows Faiss' but without calculating similarities 
 
 
 class RandomProjections():
-    def __init__(self, d, nbits, l=1, seed=42):
+    def __init__(self, d, nbits, seed=42):
         """
         :param d: Dimensionality of our original vectors (e.g number of users in the dataset)
         :param nbits: Number of hyperplanes
@@ -32,7 +32,6 @@ class RandomProjections():
         """
         self.nbits = nbits
         self.d = d
-        self.l = l
         self.projection_matrix = self._initialize_projection_matrix()
         self.seed = seed
         self.all_hashes = None
@@ -63,68 +62,18 @@ class RandomProjections():
         :param vec: shape(n_tables,nbits)
         :return:
         """
-        candidates = set()
+        candidates = list()
         i = 0
         num_candidates = 0
         # For each vector the closest buckets indices in term of hamming dist
-        closest_buckets_idxs = [self.hamming(vectors, table_id) for table_id, vectors in enumerate(vec)]
-        while True:
-            new_candidates = set()
-            new_candidates_len = 0
-            for index, table in enumerate(self.mapping_):
-                closest_bucket = closest_buckets_idxs[index][i]
-                # closest_bucket=next(closest_bucket_idxs[index])
-                new_candidates.update(table[stringify_array(self.all_hashes[index][closest_bucket])])
-            effective_new_candidates = new_candidates.difference(candidates)
-            new_candidates_len += len(effective_new_candidates)
-            if num_candidates + new_candidates_len >= k:
-                candidates.update(
-                    np.random.choice(list(effective_new_candidates), (k - num_candidates), replace=False))
-                break
-            else:
-                candidates.update(new_candidates)
-                num_candidates = len(candidates)
-                i += 1
-        return candidates
 
+        hamming_dists = self.hamming(vec)
 
-
-    # def _get_vec_candidates(self, vec, k):
-    #     """
-    #     For each vector pick its candidates
-    #     This function uses hamming distance to pick the closest candidates
-    #     :param vec: shape(n_tables,nbits)
-    #     :return:
-    #     """
-    #     candidates = set()
-    #     i = 0
-    #     num_candidates = 0
-    #
-    #     # For each vector, get the closest buckets indices in terms of hamming distance
-    #     closest_buckets_idxs = [self.hamming(vectors, table_id) for table_id, vectors in enumerate(vec)]
-    #
-    #     while True:
-    #         new_candidates = set()
-    #         new_candidates_len = 0
-    #
-    #         for index, table in enumerate(self.mapping_):
-    #             closest_bucket = closest_buckets_idxs[index][i]
-    #             new_candidates.update(table[stringify_array(self.all_hashes[index][closest_bucket])])
-    #
-    #         effective_new_candidates = new_candidates.difference(candidates)
-    #         new_candidates_len += len(effective_new_candidates)
-    #
-    #         if num_candidates + new_candidates_len >= k:
-    #             effective_new_candidates_list = list(effective_new_candidates)
-    #             np.random.shuffle(effective_new_candidates_list)
-    #             candidates.update(effective_new_candidates_list[:k - num_candidates])
-    #             break
-    #         else:
-    #             candidates.update(effective_new_candidates)
-    #             num_candidates = len(candidates)
-    #             i += 1
-    #
-    #     return candidates
+        for el in hamming_dists:
+            new_elements = self.mapping_[stringify_array(self.all_hashes[el])]
+            candidates.extend(new_elements)
+            if len(candidates) >= k:
+                return candidates[:k]
 
     def search(self, k):
         """
@@ -155,20 +104,18 @@ class RandomProjections():
         return candidates
 
     def extract_unique_hashes(self):
-        return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}
+        return np.unique(self.buckets_matrix, axis=0)
 
     def create_mappings(self):
         """
         For each bucket, it saves the list of elements that fell into it
         :return:
         """
-        hash_tables = [defaultdict(list) for _ in range(self.l)]
-        for item_idx, buckets in enumerate(self.buckets_matrix):
-            for hash_table_id, bucket in enumerate(buckets):
-                strigified_id = stringify_array(bucket)
-                current_hash_table = hash_tables[hash_table_id]
-                current_hash_table[strigified_id].append(item_idx)
-        return hash_tables
+        hash_table = defaultdict(list)
+        for index, el in enumerate(self.buckets_matrix):
+            key = stringify_array(el)
+            hash_table[key].append(index)
+        return hash_table
 
     def project_matrix(self, input_matrix):
         """
@@ -176,14 +123,10 @@ class RandomProjections():
         :param input_matrix:
         :return:
         """
-        output = np.empty((self.l, input_matrix.shape[0], self.nbits))
-        for i in range(self.projection_matrix.shape[0]):
-            temp = input_matrix.dot(self.projection_matrix[i])
-            temp = np.expand_dims(temp, axis=0)
-            output[i] = temp
-        return output.transpose(1, 0, 2)
+        output = input_matrix.dot(self.projection_matrix)
+        return output
 
-    def hamming(self, hashed_vec: np.array, table_id: int) -> np.array:
+    def hamming(self, hashed_vec: np.array) -> np.array:
         """
         Returns the matrix of buckets ordered relatively to the hamming distance
         :param hashed_vec: The bucket assigned to the vector we are considering
@@ -192,12 +135,9 @@ class RandomProjections():
         Provare a calcolarle in un colpo solo per tutti i vettori
         """
         # get hamming distance between query vec and all buckets in other_hashes
-        i = 0
-        hamming_dist = np.count_nonzero(hashed_vec != self.all_hashes[table_id], axis=1)
-        # Indices interal to self.all_hashes[table_id]
+        hamming_dist = np.count_nonzero(hashed_vec != self.all_hashes, axis=1)
+
         sorted_indices = hamming_dist.argsort()
-        # for index in sorted_indices:
-        #   yield index
         return sorted_indices
 
     def _initialize_projection_matrix(self):
@@ -206,4 +146,4 @@ class RandomProjections():
         :return:
         """
         # return np.random.randn(self.l, self.d, self.nbits)
-        return np.random.rand(self.l, self.d, self.nbits) - .5
+        return np.random.rand(self.d, self.nbits) - .5

@@ -14,11 +14,13 @@ class LSH:
         self.index = faiss.IndexLSH(d, nbits)
 
     def add(self, input_matrix):
-        self._input_matrix = input_matrix
-        # Controllo sul tipo della input matrix input_matrix
+        if sp.issparse(input_matrix):
+            input_matrix = input_matrix.A
         self.index.add(input_matrix)
 
     def search(self, input_matrix, k=20):
+        if sp.issparse(input_matrix):
+            input_matrix = input_matrix.toarray()
         n = len(input_matrix)
         output_matrix = np.zeros((n, n), dtype=int)
         D, I = self.index.search(input_matrix, k)
@@ -27,5 +29,7 @@ class LSH:
         return sp.csr_matrix(output_matrix)
 
     def search_2(self, input_matrix, k=20):
+        if sp.issparse(input_matrix):
+            input_matrix = input_matrix.toarray()
         _, I = self.index.search(input_matrix, k)
         return I

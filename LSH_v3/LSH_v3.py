@@ -1,5 +1,5 @@
 import sys
-
+import matplotlib.pyplot as plt
 import numpy as np
 from utils import stringify_array
 from collections import defaultdict
@@ -54,14 +54,11 @@ class RandomProjections():
         :param input_matrix:
         :return:
         """
-        output = None
+        output = np.empty((self.l, input_matrix.shape[0], self.nbits))
         for i in range(self.projection_matrix.shape[0]):
             temp = input_matrix.dot(self.projection_matrix[i])
-            temp = temp.reshape(1, *temp.shape)
-            if output is None:
-                output = temp
-            else:
-                output = np.concatenate([output, temp])
+            temp = np.expand_dims(temp, axis=0)
+            output[i] = temp
         return output.transpose(1, 0, 2)
 
     def _get_vec_candidates(self, vec):
@@ -70,21 +67,14 @@ class RandomProjections():
         :param vec: shape(n_tables,nbits)
         :return:
         """
-        try:
-            candidates = set()
-            for index, table in enumerate(self.mapping_):
-                candidates = candidates | set(table[stringify_array(vec[index])])
-            if len(candidates) == 1:
-                raise Exception("No candidates found")
-        except Exception as e:
-            print(f"Exception: {e}")
-            sys.exit(1)
 
+        candidates = set()
+        for index, table in enumerate(self.mapping_):
+            candidates.update(table[stringify_array(vec[index])])
         return candidates
 
-    def output_candidates(self):
+    def search_2(self):
         """
-        QUI SI POTREBBE PARALLELLIZARE FORSE
         For each element pick it's candidates
         :return: A sparse matrix of dimensionality (n_items,n_items) or (n_users,n_users) having 1 only in the candidates position
         """
@@ -117,3 +107,57 @@ class RandomProjections():
         :return:
         """
         return np.random.rand(self.l, self.d, self.nbits) - .5
+
+    def plot_bucket_occupation(self):
+        total_buckets = 2 ** self.nbits
+        num_tables = len(self.mapping_)
+
+        filled_buckets_list = []
+        avg_elements_per_bucket_list = []
+
+        for i, table in enumerate(self.mapping_):
+            filled_buckets = len(table)
+            filled_buckets_list.append(filled_buckets)
+
+            # Calculate the average number of elements per filled bucket
+            if filled_buckets > 0:
+                avg_elements_per_bucket = sum(len(candidates) for candidates in table.values()) / filled_buckets
+            else:
+                avg_elements_per_bucket = 0
+            avg_elements_per_bucket_list.append(avg_elements_per_bucket)
+
+            print(f"Hash Table {i + 1}: {filled_buckets} out of {total_buckets} buckets are filled.")
+
+            # Prepare data for plotting
+            bucket_sizes = [len(candidates) for candidates in table.values()]
+            bucket_ids = list(table.keys())
+
+            # Plotting the data
+            plt.figure(figsize=(12, 6))
+            plt.bar(bucket_ids, bucket_sizes, color='skyblue', width=0.6)
+            plt.xlabel('Bucket ID', fontsize=12)
+            plt.ylabel('Number of Candidates', fontsize=12)
+            plt.title(f'Occupation of Buckets in Hash Table {i + 1}', fontsize=14)
+            plt.xticks(rotation=45, ha='right')
+            plt.tight_layout()
+            plt.show()
+
+        # Plot the number of filled buckets for each hash table
+        plt.figure(figsize=(12, 6))
+        plt.bar(range(1, num_tables + 1), filled_buckets_list, color='skyblue', width=0.6)
+        plt.xlabel('Hash Table', fontsize=12)
+        plt.ylabel('Number of Filled Buckets', fontsize=12)
+        plt.title('Number of Filled Buckets per Hash Table', fontsize=14)
+        plt.xticks(range(1, num_tables + 1))
+        plt.tight_layout()
+        plt.show()
+
+        # Plot the average number of elements per filled bucket for each hash table
+        plt.figure(figsize=(12, 6))
+        plt.bar(range(1, num_tables + 1), avg_elements_per_bucket_list, color='skyblue', width=0.6)
+        plt.xlabel('Hash Table', fontsize=12)
+        plt.ylabel('Average Number of Elements per Filled Bucket', fontsize=12)
+        plt.title('Average Number of Elements per Filled Bucket per Hash Table', fontsize=14)
+        plt.xticks(range(1, num_tables + 1))
+        plt.tight_layout()
+        plt.show()

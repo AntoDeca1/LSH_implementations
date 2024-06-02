@@ -25,6 +25,5 @@ class LSHRp:
             candidates = table.query(vecs)
             for index, candidate in enumerate(candidates):
                 output_matrix[index, candidate] = 1
-        # RITORNARE DIRETTAMENTE LA MATRICE DI NUMPY rende piu rapido il calcolo
         # return output_matrix
         return sp.csr_matrix(output_matrix)
