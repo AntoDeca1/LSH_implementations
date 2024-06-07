@@ -1,6 +1,6 @@
 import numpy as np
 from LSH_v4 import RandomProjections
-from utils import create_sparse_matrix
+from utils import *
 import time
 from sklearn.metrics.pairwise import cosine_similarity
 
@@ -8,10 +8,10 @@ from sklearn.metrics.pairwise import cosine_similarity
 PARAMETERS
 """
 seed = 42
-nbits = 256  # number of hyperplanes in a three --> Decrease the number of false positives
+nbits = 32 # number of hyperplanes in a three --> Decrease the number of false positives
 m = 5900  # number of users
-n = 3750  # number of items
-l = 3  # number of threes in the forest -->Decrease the number of false negatives
+n = 5000  # number of items
+l = 4  # number of threes in the forest -->Decrease the number of false negatives
 sparsity = 0.97
 neighbours = 200
 np.random.seed(seed)
@@ -39,3 +39,4 @@ start = time.time()
 rp.search_2(k=neighbours)
 end = time.time()
 print("Time to compute the retrieve the candidates with LSH", end - start)
+rp.average_number_of_non_empty_buckets()

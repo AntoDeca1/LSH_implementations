@@ -29,6 +29,8 @@ Index our vectors
 start = time.time()
 rp.add(user_item_matrix_dummy.T)
 end = time.time()
+print("Bucket occupation")
+rp.bucket_occupation()
 print("Time to index the vectors with LSH", end - start)
 start = time.time()
 similarities = cosine_similarity(user_item_matrix_dummy.T)

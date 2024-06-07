@@ -117,10 +117,3 @@ def create_mappings(buckets):
     return mapping_
 
 
-def hamming_distance_skratch(vec, buckets_hashes):
-    hamming_dist = np.count_nonzero(vec != buckets_hashes, axis=1).reshape(-1, 1)
-    # add hash values to each row
-    hamming_dist = np.concatenate((projection.hashes, hamming_dist), axis=1)
-    # sort based on distance
-    hamming_dist = hamming_dist[hamming_dist[:, -1].argsort()]
-    return hamming_dist

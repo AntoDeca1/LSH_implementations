@@ -87,60 +87,6 @@ class RandomProjections():
                 i += 1
         return candidates
 
-
-
-    # def _get_vec_candidates(self, vec, k):
-    #     """
-    #     For each vector pick its candidates
-    #     This function uses hamming distance to pick the closest candidates
-    #     :param vec: shape(n_tables,nbits)
-    #     :return:
-    #     """
-    #     candidates = set()
-    #     i = 0
-    #     num_candidates = 0
-    #
-    #     # For each vector, get the closest buckets indices in terms of hamming distance
-    #     closest_buckets_idxs = [self.hamming(vectors, table_id) for table_id, vectors in enumerate(vec)]
-    #
-    #     while True:
-    #         new_candidates = set()
-    #         new_candidates_len = 0
-    #
-    #         for index, table in enumerate(self.mapping_):
-    #             closest_bucket = closest_buckets_idxs[index][i]
-    #             new_candidates.update(table[stringify_array(self.all_hashes[index][closest_bucket])])
-    #
-    #         effective_new_candidates = new_candidates.difference(candidates)
-    #         new_candidates_len += len(effective_new_candidates)
-    #
-    #         if num_candidates + new_candidates_len >= k:
-    #             effective_new_candidates_list = list(effective_new_candidates)
-    #             np.random.shuffle(effective_new_candidates_list)
-    #             candidates.update(effective_new_candidates_list[:k - num_candidates])
-    #             break
-    #         else:
-    #             candidates.update(effective_new_candidates)
-    #             num_candidates = len(candidates)
-    #             i += 1
-    #
-    #     return candidates
-
-    def search(self, k):
-        """
-        Return a sparse matrix of shape n_itemsXn_items(n_usersXn_users) having only the candidate indexes set to 1
-        :param k:
-        :return:
-        """
-        n = len(self.buckets_matrix)
-        output_matrix = np.zeros((n, n), dtype=int)
-        for index, el in enumerate(self.buckets_matrix):
-            candidates = list(self._get_vec_candidates(el, k))
-            output_matrix[index, candidates] = 1
-        # N.B Non passare alla scipy matrix rende il tutto piu rapido
-        # return output_matrix
-        return sp.csr_matrix(output_matrix)
-
     def search_2(self, k):
         """
         Instead of returning a sparse matrix n_itemsXn_items with only the candidates filled simply returns a matrix of shape
@@ -207,3 +153,24 @@ class RandomProjections():
         """
         # return np.random.randn(self.l, self.d, self.nbits)
         return np.random.rand(self.l, self.d, self.nbits) - .5
+
+    def average_number_of_non_empty_buckets(self):
+        """
+
+        :return:
+        """
+        n = self.buckets_matrix.shape[0]
+        theoretical_number_of_non_empty_buckets = compute_formula(self.nbits, n)
+        empty_buckets_values = []
+        for v in self.mapping_:
+            empty_buckets_values.append(len(v))
+        real_empty_buckets_n = np.average(empty_buckets_values)
+        print(f"Theoretcal number {theoretical_number_of_non_empty_buckets} ")
+        print(f"Real number {real_empty_buckets_n} ")
+
+
+def compute_formula(nbits, n):
+    term2 = 2 ** nbits
+    term3 = 1 - (1 - 1 / (2 ** nbits)) ** n
+    result = term2 * term3
+    return result

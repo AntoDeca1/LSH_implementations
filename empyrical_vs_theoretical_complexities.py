@@ -14,54 +14,70 @@ def theoretical_indexing_time(l, n, d, nbits):
 
 # Function to calculate theoretical search time
 def theoretical_search_time(n, l, nbits, k):
-    term1 = n * l * nbits * 2 ** nbits * (1 - (1 - 1 / 2 ** nbits) ** n)
-    term2 = (k ** 2 * 2 ** nbits) / l
-    return term1 + term2
+    # Calculate the complexity for Hamming distance computation
+    hamming_complexity = n * l * 2 ** nbits * (1 - (1 - 1 / 2 ** nbits) ** n) * (
+            nbits + np.log2(2 ** nbits * (1 - (1 - 1 / 2 ** nbits) ** n)))
+
+    # Calculate the complexity for the while loop iterations
+    while_loop_complexity = n * k
+
+    # Total combined complexity
+    total_complexity = hamming_complexity + while_loop_complexity
+
+    return total_complexity
 
 
 # Function to run the tests and collect timing data
-def run_tests(seed, nbits_list, m_list, n_list, l_list, sparsity, neighbours):
+def run_tests(seed, nbits_list, m_list, n_list, l_list, sparsity, neighbours_list):
     results = []
+    total_combinations = len(nbits_list) * len(m_list) * len(n_list) * len(l_list) * len(neighbours_list)
+    current_combination = 0
 
-    for nbits in nbits_list:
-        for m in m_list:
-            for n in n_list:
-                for l in l_list:
-                    np.random.seed(seed)
+    for neighbour in neighbours_list:
+        for nbits in nbits_list:
+            for m in m_list:
+                for n in n_list:
+                    for l in l_list:
+                        current_combination += 1
+                        print(f"Testing combination {current_combination}/{total_combinations} - "
+                              f"nbits: {nbits}, m: {m}, n: {n}, l: {l}, neighbours: {neighbour}")
 
-                    # Create sparse matrix
-                    user_item_matrix_dummy = create_sparse_matrix(m, n, sparsity=sparsity)
+                        np.random.seed(seed)
 
-                    # Initialize LSH
-                    rp = RandomProjections(d=m, l=l, nbits=nbits, seed=seed)
+                        # Create sparse matrix
+                        user_item_matrix_dummy = create_sparse_matrix(m, n, sparsity=sparsity)
 
-                    # Index vectors
-                    start = time.time()
-                    rp.add(user_item_matrix_dummy.T)
-                    end = time.time()
-                    index_time = end - start
+                        # Initialize LSH
+                        rp = RandomProjections(d=m, l=l, nbits=nbits, seed=seed)
 
-                    # Retrieve candidates
-                    start = time.time()
-                    rp.search_2(k=neighbours)
-                    end = time.time()
-                    search_time = end - start
+                        # Index vectors
+                        start = time.time()
+                        rp.add(user_item_matrix_dummy.T)
+                        end = time.time()
+                        index_time = end - start
 
-                    # Calculate theoretical times
-                    theoretical_index_time = theoretical_indexing_time(l, n, m, nbits)
-                    theoretical_search_time_value = theoretical_search_time(n, l, nbits, neighbours)
+                        # Retrieve candidates
+                        start = time.time()
+                        rp.search_2(k=neighbour)
+                        end = time.time()
+                        search_time = end - start
 
-                    # Store results
-                    results.append({
-                        'nbits': nbits,
-                        'm': m,
-                        'n': n,
-                        'l': l,
-                        'index_time': index_time,
-                        'search_time': search_time,
-                        'theoretical_index_time': theoretical_index_time,
-                        'theoretical_search_time': theoretical_search_time_value
-                    })
+                        # Calculate theoretical times
+                        theoretical_index_time_value = theoretical_indexing_time(l, n, m, nbits)
+                        theoretical_search_time_value = theoretical_search_time(n, l, nbits, neighbour)
+
+                        # Store results
+                        results.append({
+                            'nbits': nbits,
+                            'm': m,
+                            'n': n,
+                            'l': l,
+                            'neighbours': neighbour,
+                            'index_time': index_time,
+                            'search_time': search_time,
+                            'theoretical_index_time': theoretical_index_time_value,
+                            'theoretical_search_time': theoretical_search_time_value
+                        })
 
     return pd.DataFrame(results)
 
@@ -69,16 +85,15 @@ def run_tests(seed, nbits_list, m_list, n_list, l_list, sparsity, neighbours):
 # Parameters
 seed = 42
 sparsity = 0.9
-neighbours = 200
-
+neighbours_list = [200]
 # Define ranges for the parameters to test
-nbits_list = [10, 15, 20]  # Different number of hyperplanes
+nbits_list = [10, 20, 32]  # Different number of hyperplanes
 m_list = [3200, 6400, 12800]  # Different number of users
 n_list = [2000, 4000, 8000]  # Different number of items
 l_list = [2, 4, 8]  # Different number of hash tables
 
 # Run tests
-results_df = run_tests(seed, nbits_list, m_list, n_list, l_list, sparsity, neighbours)
+results_df = run_tests(seed, nbits_list, m_list, n_list, l_list, sparsity, neighbours_list)
 
 # Normalize the times
 results_df['index_time'] = results_df['index_time'] / results_df['index_time'].max()

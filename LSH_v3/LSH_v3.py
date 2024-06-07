@@ -108,56 +108,11 @@ class RandomProjections():
         """
         return np.random.rand(self.l, self.d, self.nbits) - .5
 
-    def plot_bucket_occupation(self):
-        total_buckets = 2 ** self.nbits
-        num_tables = len(self.mapping_)
-
-        filled_buckets_list = []
-        avg_elements_per_bucket_list = []
-
-        for i, table in enumerate(self.mapping_):
-            filled_buckets = len(table)
-            filled_buckets_list.append(filled_buckets)
-
-            # Calculate the average number of elements per filled bucket
-            if filled_buckets > 0:
-                avg_elements_per_bucket = sum(len(candidates) for candidates in table.values()) / filled_buckets
-            else:
-                avg_elements_per_bucket = 0
-            avg_elements_per_bucket_list.append(avg_elements_per_bucket)
-
-            print(f"Hash Table {i + 1}: {filled_buckets} out of {total_buckets} buckets are filled.")
-
-            # Prepare data for plotting
-            bucket_sizes = [len(candidates) for candidates in table.values()]
-            bucket_ids = list(table.keys())
-
-            # Plotting the data
-            plt.figure(figsize=(12, 6))
-            plt.bar(bucket_ids, bucket_sizes, color='skyblue', width=0.6)
-            plt.xlabel('Bucket ID', fontsize=12)
-            plt.ylabel('Number of Candidates', fontsize=12)
-            plt.title(f'Occupation of Buckets in Hash Table {i + 1}', fontsize=14)
-            plt.xticks(rotation=45, ha='right')
-            plt.tight_layout()
-            plt.show()
-
-        # Plot the number of filled buckets for each hash table
-        plt.figure(figsize=(12, 6))
-        plt.bar(range(1, num_tables + 1), filled_buckets_list, color='skyblue', width=0.6)
-        plt.xlabel('Hash Table', fontsize=12)
-        plt.ylabel('Number of Filled Buckets', fontsize=12)
-        plt.title('Number of Filled Buckets per Hash Table', fontsize=14)
-        plt.xticks(range(1, num_tables + 1))
-        plt.tight_layout()
-        plt.show()
-
-        # Plot the average number of elements per filled bucket for each hash table
-        plt.figure(figsize=(12, 6))
-        plt.bar(range(1, num_tables + 1), avg_elements_per_bucket_list, color='skyblue', width=0.6)
-        plt.xlabel('Hash Table', fontsize=12)
-        plt.ylabel('Average Number of Elements per Filled Bucket', fontsize=12)
-        plt.title('Average Number of Elements per Filled Bucket per Hash Table', fontsize=14)
-        plt.xticks(range(1, num_tables + 1))
-        plt.tight_layout()
-        plt.show()
+    def bucket_occupation(self):
+        for table_id, table in enumerate(self.mapping_):
+            possible_buckets = 2 ** self.nbits
+            print(f"We have {self.nbits} nbits and  {possible_buckets} buckets  ")
+            lens = []
+            for el in table.values():
+                lens.append(len(el))
+            print(f"Table {table_id} has average occupation of {np.mean(lens)} per bucket ")
