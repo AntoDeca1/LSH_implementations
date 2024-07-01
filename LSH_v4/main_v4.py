@@ -39,4 +39,4 @@ start = time.time()
 rp.search_2(k=neighbours)
 end = time.time()
 print("Time to compute the retrieve the candidates with LSH", end - start)
-rp.average_number_of_non_empty_buckets()
+

@@ -4,6 +4,7 @@ from utils import stringify_array
 from sklearn.metrics.pairwise import cosine_similarity
 from collections import defaultdict
 import time
+from joblib import Parallel, delayed
 import scipy.sparse as sp
 from sklearn.metrics import pairwise_distances
 import sys
@@ -52,7 +53,7 @@ class RandomProjections():
         """
         self._input_matrix = input_matrix
         buckets = self.project_matrix(self._input_matrix)
-        self.buckets_matrix = (buckets > 0).astype(int)
+        self.buckets_matrix = (buckets > 0).astype("uint8")
         self.all_hashes = self.extract_unique_hashes()
         self.mapping_ = self.create_mappings()
 
@@ -63,11 +64,13 @@ class RandomProjections():
         :param vec: shape(n_tables,nbits)
         :return:
         """
+
         candidates = set()
         i = 0
         num_candidates = 0
         # For each vector the closest buckets indices in term of hamming dist
         closest_buckets_idxs = [self.hamming(vectors, table_id) for table_id, vectors in enumerate(vec)]
+
         while True:
             new_candidates = set()
             new_candidates_len = 0
@@ -137,13 +140,9 @@ class RandomProjections():
         :return: Matrix identical to "other_hashes" but ordered relatively to the hamming distance from the current hashed_vec
         Provare a calcolarle in un colpo solo per tutti i vettori
         """
-        # get hamming distance between query vec and all buckets in other_hashes
-        i = 0
         hamming_dist = np.count_nonzero(hashed_vec != self.all_hashes[table_id], axis=1)
         # Indices interal to self.all_hashes[table_id]
         sorted_indices = hamming_dist.argsort()
-        # for index in sorted_indices:
-        #   yield index
         return sorted_indices
 
     def _initialize_projection_matrix(self):
@@ -153,24 +152,3 @@ class RandomProjections():
         """
         # return np.random.randn(self.l, self.d, self.nbits)
         return np.random.rand(self.l, self.d, self.nbits) - .5
-
-    def average_number_of_non_empty_buckets(self):
-        """
-
-        :return:
-        """
-        n = self.buckets_matrix.shape[0]
-        theoretical_number_of_non_empty_buckets = compute_formula(self.nbits, n)
-        empty_buckets_values = []
-        for v in self.mapping_:
-            empty_buckets_values.append(len(v))
-        real_empty_buckets_n = np.average(empty_buckets_values)
-        print(f"Theoretcal number {theoretical_number_of_non_empty_buckets} ")
-        print(f"Real number {real_empty_buckets_n} ")
-
-
-def compute_formula(nbits, n):
-    term2 = 2 ** nbits
-    term3 = 1 - (1 - 1 / (2 ** nbits)) ** n
-    result = term2 * term3
-    return result
