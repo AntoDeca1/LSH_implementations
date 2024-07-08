@@ -47,7 +47,6 @@ class IndexLSH:
     def search(self, x, k):
         prima = time.time()
         query_codes = self.sa_encode(x)
-        print("TEMPO PER INDICIZZARE LE QUERY", time.time() - prima)
         num_workers = os.cpu_count()
         num_queries = len(query_codes)
         chunk_size = max(1, num_queries // num_workers)
@@ -66,7 +65,6 @@ class IndexLSH:
         for i, (dist, lbl) in enumerate(results_flat):
             distances[i] = dist
             labels[i] = lbl
-        print("TEMPO ITERARE SUI RISULTATI", time.time() - prima)
 
         return distances, labels
 
@@ -74,9 +72,9 @@ class IndexLSH:
 # Example usage
 if __name__ == "__main__":
     seed = 42
-    nbits = 4  # number of hyperplanes in a three --> Decrease the number of false positives
+    nbits = 128  # number of hyperplanes in a three --> Decrease the number of false positives
     m = 6400  # number of users
-    n = 20000  # number of items
+    n = 10000  # number of items
     sparsity = 0.99
     neighbours = 200
     user_item_matrix_dummy = create_sparse_matrix(m, n, sparsity=sparsity, seed=seed)

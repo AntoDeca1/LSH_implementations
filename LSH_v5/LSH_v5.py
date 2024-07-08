@@ -6,6 +6,10 @@ from utils import stringify_array
 from collections import defaultdict
 import multiprocessing as mp
 
+"""
+The same logic as LSH_v4 with the introduction of multiprocessing in the candidates retrieval phase
+"""
+
 
 class RandomProjections():
     def __init__(self, d, nbits, l=1, seed=42):
@@ -48,7 +52,13 @@ class RandomProjections():
             output[i] = temp
         return output.transpose(1, 0, 2)
 
-    def _get_vec_candidates(self, vec, k):
+    def extract_unique_hashes(self):
+        # Transpose and extract unique elements
+        return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}
+
+    def _get_vec_candidates(self, vec, k, seed=42):
+        if seed is not None:
+            np.random.seed(seed)
         candidates = set()
         i = 0
         num_candidates = 0
@@ -92,11 +102,9 @@ class RandomProjections():
     def _process_chunk(self, chunk, k):
         chunk_candidates = np.zeros((len(chunk), k), dtype=int)
         for index, el in enumerate(chunk):
-            chunk_candidates[index] = self._get_vec_candidates(el, k)
+            seed = self.seed + index
+            chunk_candidates[index] = self._get_vec_candidates(el, k, seed)
         return chunk_candidates
-
-    def extract_unique_hashes(self):
-        return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}
 
     def create_mappings(self):
         hash_tables = [defaultdict(list) for _ in range(self.l)]

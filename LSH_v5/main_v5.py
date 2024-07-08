@@ -9,10 +9,10 @@ PARAMETERS
 """
 if __name__ == '__main__':
     seed = 42
-    nbits = 32  # number of hyperplanes in a three --> Decrease the number of false positives
+    nbits = 16  # number of hyperplanes in a three --> Decrease the number of false positives
     m = 5900  # number of users
-    n = 5000  # number of items
-    l = 4  # number of threes in the forest -->Decrease the number of false negatives
+    n = 7000  # number of items
+    l = 20  # number of threes in the forest -->Decrease the number of false negatives
     sparsity = 0.97
     neighbours = 200
     np.random.seed(seed)

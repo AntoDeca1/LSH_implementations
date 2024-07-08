@@ -6,19 +6,10 @@ import time
 from LSH_faiss import LSH
 
 """
-Simply pure Faiss(without the possibility of having more threes) 
-If you run main_v4(my custom implementation of faissLSH index) with the following parameters the computational time is the same
-seed = 42
-nbits = 8  # number of hyperplanes in a three --> Decrease the number of false positives
-m = 6400  # number of users
-n = 3750  # number of items
-sparsity = 0.9
-neighbours = 20
-l=1(to have just one table also in my implementation)4
-"""
-"""
 PARAMETERS
 """
+
+
 seed = 42
 nbits = 8  # number of hyperplanes in a three --> Decrease the number of false positives
 m = 6400  # number of users
@@ -28,7 +19,7 @@ neighbours = 20
 """
 INPUT
 """
-user_item_matrix_dummy = create_sparse_matrix(m, n, sparsity=sparsity)
+user_item_matrix_dummy = create_sparse_matrix(m, n, sparsity=sparsity, seed=seed)
 item_user_matrix_dummy = user_item_matrix_dummy.T.toarray()
 # initialize the index using our vectors dimensionality (m) and nbits
 index = LSH(m, nbits)

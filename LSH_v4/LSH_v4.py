@@ -11,14 +11,19 @@ import sys
 import random
 
 """
-Implementation that instead follows Faiss' but without calculating similarities within the LSH class
+Custom implementation that follows a different logic
+The idea is to hash all the input elements in a binary representation and create a mapping between buckets and elements
 1) For each vector I take the candidates in this way
- 1a) I calculate the hamming distance between the hash of the vector and all other hashes in each table
- 2a) I take all candidates
+ 1a) Compute a hash for each of the l hash table
+ 2a) Compute the hamming distance between the hashes and the buckets in the corresponding table
+ 2a) Take the candidates from the buckets with the lowest hamming distance from all the tables
  3a) If I have more than k I take k random ones (according to the LSH pinecone article) the approximation is here
  Taken from the article : https://www.pinecone.io/learn/series/faiss/locality-sensitive-hashing-random-projection/
  "A single bucket containing 172_039 vectors. That means that we are choosing our top k values "at random" from those 172K vectors. 
  Clearly, we need to reduce our bucket size." 
+ 
+ N.B: This approach, contrary to what is stated in the pinecone article, is different from the way Faiss thinks.
+Faiss does not do vector bucketing. This type of implementation has proven to be very expensive and not very scalable
 """
 
 
@@ -71,12 +76,13 @@ class RandomProjections():
         # For each vector the closest buckets indices in term of hamming dist
         closest_buckets_idxs = [self.hamming(vectors, table_id) for table_id, vectors in enumerate(vec)]
 
+        # closest_buckets_idxs = np.count_nonzero((self.all_hashes != vec[:, np.newaxis, :]), axis=2).argsort()
+
         while True:
             new_candidates = set()
             new_candidates_len = 0
             for index, table in enumerate(self.mapping_):
                 closest_bucket = closest_buckets_idxs[index][i]
-                # closest_bucket=next(closest_bucket_idxs[index])
                 new_candidates.update(table[stringify_array(self.all_hashes[index][closest_bucket])])
             effective_new_candidates = new_candidates.difference(candidates)
             new_candidates_len += len(effective_new_candidates)
@@ -104,7 +110,28 @@ class RandomProjections():
         return candidates
 
     def extract_unique_hashes(self):
-        return {index: np.unique(el, axis=0) for index, el in enumerate(self.buckets_matrix.transpose(1, 0, 2))}
+        # Transpose and extract unique elements
+        transposed_buckets = self.buckets_matrix.transpose(1, 0, 2)
+        unique_hashes = {index: np.unique(el, axis=0) for index, el in enumerate(transposed_buckets)}
+
+        # # Determine the maximum length for padding
+        # max_len = max(len(el) for el in unique_hashes.values())
+        #
+        # all_hashes_padded = np.empty((self.l, max_len, self.nbits), dtype="uint8")
+        #
+        # for index, el in unique_hashes.items():
+        #     el_len = len(el)
+        #     if el_len != max_len:
+        #         # Create a padded array with a unique padding value
+        #         padding_value = 2  # Assuming all values are non-negative
+        #         padded = np.full((max_len - el_len, self.nbits), fill_value=padding_value, dtype=el.dtype)
+        #         temp = np.vstack([el, padded])
+        #         all_hashes_padded[index, :, :] = temp
+        #     else:
+        #         all_hashes_padded[index, :, :] = el
+        # return all_hashes_padded
+
+        return unique_hashes
 
     def create_mappings(self):
         """

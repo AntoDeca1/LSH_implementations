@@ -2,6 +2,10 @@ import faiss
 import numpy as np
 import scipy.sparse as sp
 
+"""
+A wrapper class around Faiss index.
+"""
+
 
 class LSH:
     def __init__(self, d, nbits):
@@ -31,5 +35,5 @@ class LSH:
     def search_2(self, input_matrix, k=20):
         if sp.issparse(input_matrix):
             input_matrix = input_matrix.toarray()
-        _, I = self.index.search(input_matrix, k)
-        return I
+        D, I = self.index.search(input_matrix, k)
+        return D, I

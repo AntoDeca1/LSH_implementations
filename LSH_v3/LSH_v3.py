@@ -1,17 +1,21 @@
+import gc
 import sys
-import matplotlib.pyplot as plt
+import time
+
 import numpy as np
 from utils import stringify_array
 from collections import defaultdict
 import scipy.sparse as sp
+import multiprocessing as mp
+import os
 
 """
-In questa implementazione
-1) Seguo lo scheletro iniziale(LSH_v2)
-2) Lo adatto all'approccio https://musicinformationretrieval.com/lsh_fingerprinting.html
+LSH implementation following the original definition
+We pick as candidates only the elements that fall in the same bucket for at least one hash table
+1)NO HAMMING DISTANCE IS USED HERE
+2) WE HAVE NO CONTROL OVER THE NUMBER OF CANDIDATES
 
-Prendo come candidati solo quelli che ricadono nello stesso bucket per almeno una hash table.(Non uso hamming distance)
-N.B:Può succedere che non ci siano candidati in questo caso
+The output of the search function is a dictionary containing the index of the candidates for each element.
 """
 
 
@@ -59,6 +63,8 @@ class RandomProjections():
             temp = input_matrix.dot(self.projection_matrix[i])
             temp = np.expand_dims(temp, axis=0)
             output[i] = temp
+        # del self.projection_matrix
+        # gc.collect()
         return output.transpose(1, 0, 2)
 
     def _get_vec_candidates(self, vec):
@@ -76,16 +82,24 @@ class RandomProjections():
     def search_2(self):
         """
         For each element pick it's candidates
+        :return: A dictionary containing the candidates is retrieved(Faster than search_3)
+        """
+        output_dict = defaultdict(list)
+        for index, el in enumerate(self.buckets_matrix):
+            candidates = list(self._get_vec_candidates(el))
+            output_dict[index] = candidates
+        return output_dict
+
+    def search_3(self):
+        """
+        For each element pick it's candidates
         :return: A sparse matrix of dimensionality (n_items,n_items) or (n_users,n_users) having 1 only in the candidates position
         """
         n = len(self.buckets_matrix)
-        # data, indices, cols_ranges = [], [], []
-        output_matrix = np.zeros((n, n), dtype=int)
+        output_matrix = np.zeros((n, n))
         for index, el in enumerate(self.buckets_matrix):
             candidates = list(self._get_vec_candidates(el))
             output_matrix[index, candidates] = 1
-        # N.B Non passare alla scipy matrix rende il tutto piu rapido
-        # return output_matrix
         return sp.csr_matrix(output_matrix)
 
     def create_mappings(self):
@@ -107,12 +121,3 @@ class RandomProjections():
         :return:
         """
         return np.random.rand(self.l, self.d, self.nbits) - .5
-
-    def bucket_occupation(self):
-        for table_id, table in enumerate(self.mapping_):
-            possible_buckets = 2 ** self.nbits
-            print(f"We have {self.nbits} nbits and  {possible_buckets} buckets  ")
-            lens = []
-            for el in table.values():
-                lens.append(len(el))
-            print(f"Table {table_id} has average occupation of {np.mean(lens)} per bucket ")
